@@ -1,0 +1,18 @@
+[
+  {
+    "modid": "DonationLeaderboards",
+    "name": "DonationLeaderboards",
+    "description": "SpongeForge NPC Leaderboards System",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": [
+      "Winglet"
+    ],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
