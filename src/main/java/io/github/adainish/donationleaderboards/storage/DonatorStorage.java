@@ -8,6 +8,8 @@ import io.github.adainish.donationleaderboards.util.Adapters;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class DonatorStorage {
@@ -67,6 +69,29 @@ public class DonatorStorage {
         donator.updateCache();
     }
 
+    public static List <Donator> donatorList () {
+        List<Donator> list = new ArrayList <>();
+        File dir = DonationLeaderboards.getDataDir();
+        dir.mkdirs();
+
+        Gson gson = Adapters.PRETTY_MAIN_GSON;
+        JsonReader reader = null;
+
+        File[] listFiles = dir.listFiles();
+        for (int i = 0, listFilesLength = listFiles.length; i < listFilesLength; i++) {
+            File f = listFiles[i];
+            try {
+                reader = new JsonReader(new FileReader(f));
+            } catch (FileNotFoundException e) {
+                continue;
+            }
+
+            Donator d = gson.fromJson(reader, Donator.class);
+            list.add(DonationLeaderboards.getCachedDonators().getOrDefault(d.getUuid(), d));
+        }
+        return list;
+    }
+
     public static Donator getDonator(UUID uuid) {
         File dir = DonationLeaderboards.getDataDir();
         dir.mkdirs();
@@ -74,11 +99,11 @@ public class DonatorStorage {
         if (DonationLeaderboards.getCachedDonators().containsKey(uuid))
             return DonationLeaderboards.getCachedDonators().get(uuid);
 
-        File guildFile = new File(dir, "%uuid%.json".replaceAll("%uuid%", String.valueOf(uuid)));
+        File file = new File(dir, "%uuid%.json".replaceAll("%uuid%", String.valueOf(uuid)));
         Gson gson = Adapters.PRETTY_MAIN_GSON;
         JsonReader reader = null;
         try {
-            reader = new JsonReader(new FileReader(guildFile));
+            reader = new JsonReader(new FileReader(file));
         } catch (FileNotFoundException e) {
             DonationLeaderboards.log.error("Something went wrong attempting to read the Donator Data, new Entry Perhaps?");
             return null;
