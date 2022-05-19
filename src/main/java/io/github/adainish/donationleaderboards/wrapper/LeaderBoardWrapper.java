@@ -1,26 +1,23 @@
 package io.github.adainish.donationleaderboards.wrapper;
 
-import io.github.adainish.donationleaderboards.obj.Donator;
-import io.github.adainish.donationleaderboards.obj.DonatorSpot;
 import io.github.adainish.donationleaderboards.obj.Leaderboard;
-import io.github.adainish.donationleaderboards.storage.DonatorStorage;
 import io.github.adainish.donationleaderboards.storage.LeaderboardStorage;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class LeaderBoardWrapper {
     private Leaderboard leaderboard;
-    private List<Donator> donatorList = new ArrayList<>();
-    private List<DonatorSpot> donatorSpots = new ArrayList <>();
 
     public LeaderBoardWrapper() {
         if (LeaderboardStorage.getLeaderboard() == null) {
             LeaderboardStorage.makeLeaderBoard();
-        } else setLeaderboard(LeaderboardStorage.getLeaderboard());
+        }
+        setLeaderboard(LeaderboardStorage.getLeaderboard());
+        leaderboard.initDonators();
+        leaderboard.initDonatorSpots();
+    }
 
-        setDonatorList(DonatorStorage.donatorList());
-
+    public void saveLeaderBoard() {
+        LeaderboardStorage.saveLeaderBoard(leaderboard);
     }
 
 
@@ -52,19 +49,12 @@ public class LeaderBoardWrapper {
         this.leaderboard = leaderboard;
     }
 
-    public List <Donator> getDonatorList() {
-        return donatorList;
+
+    public void updateNPCs() {
+
     }
 
-    public void setDonatorList(List <Donator> donatorList) {
-        this.donatorList = donatorList;
-    }
+    public void updateHologram() {
 
-    public List <DonatorSpot> getDonatorSpots() {
-        return donatorSpots;
-    }
-
-    public void setDonatorSpots(List <DonatorSpot> donatorSpots) {
-        this.donatorSpots = donatorSpots;
     }
 }

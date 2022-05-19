@@ -7,9 +7,35 @@ import io.github.adainish.donationleaderboards.obj.DonatorSpot;
 import io.github.adainish.donationleaderboards.util.Adapters;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class DonatorSpotStorage {
+
+    public static List <DonatorSpot> donatorSpotList () {
+        List<DonatorSpot> list = new ArrayList <>();
+        File dir = DonationLeaderboards.getDataDir();
+        dir.mkdirs();
+
+        Gson gson = Adapters.PRETTY_MAIN_GSON;
+        JsonReader reader = null;
+
+        File[] listFiles = dir.listFiles();
+        for (int i = 0, listFilesLength = listFiles.length; i < listFilesLength; i++) {
+            File f = listFiles[i];
+            try {
+                reader = new JsonReader(new FileReader(f));
+            } catch (FileNotFoundException e) {
+                continue;
+            }
+
+            DonatorSpot d = gson.fromJson(reader, DonatorSpot.class);
+            list.add(d);
+        }
+        return list;
+    }
+
     public static void makeDonatorSpotData(String identifier, int rankingNumber) {
         File dir = DonationLeaderboards.getDataDir();
         dir.mkdirs();

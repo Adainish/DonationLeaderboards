@@ -1,10 +1,15 @@
 package io.github.adainish.donationleaderboards;
 
+import io.github.adainish.donationleaderboards.command.Command;
+import io.github.adainish.donationleaderboards.config.DonatorSpotConfig;
+import io.github.adainish.donationleaderboards.listeners.PlayerListener;
 import io.github.adainish.donationleaderboards.obj.Donator;
 import io.github.adainish.donationleaderboards.wrapper.LeaderBoardWrapper;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,13 +62,21 @@ public class DonationLeaderboards {
         setLeaderboardDir(new File(getDataDir() + "/leaderboard"));
         getLeaderboardDir().mkdirs();
 
+        initConfigs();
 
+        MinecraftForge.EVENT_BUS.register(new PlayerListener());
     }
 
 
     @Mod.EventHandler
     public void onServerStarting(FMLServerStartingEvent event) {
         wrapper = new LeaderBoardWrapper();
+        event.registerServerCommand(new Command());
+    }
+
+    @Mod.EventHandler
+    public void onServerStopping(FMLServerStoppingEvent event) {
+        wrapper.saveLeaderBoard();
     }
 
     public static File getConfigDir() {
@@ -97,6 +110,24 @@ public class DonationLeaderboards {
 
     public static void setCachedDonators(HashMap <UUID, Donator> cachedDonators) {
         DonationLeaderboards.cachedDonators = cachedDonators;
+    }
+
+    public void load() {
+        initConfigs();
+        wrapper.getLeaderboard().initDonatorSpots();
+    }
+
+    public void initConfigs() {
+        setupConfigs();
+        loadConfigs();
+    }
+
+    public void loadConfigs() {
+        DonatorSpotConfig.getConfig().load();
+    }
+
+    public void setupConfigs() {
+        DonatorSpotConfig.getConfig().setup();
     }
 
 }

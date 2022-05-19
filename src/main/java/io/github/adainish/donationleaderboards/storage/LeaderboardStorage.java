@@ -33,7 +33,6 @@ public class LeaderboardStorage {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        DonationLeaderboards.wrapper.setLeaderboard(leaderboard);
     }
 
     public static void saveLeaderBoard(Leaderboard leaderboard) {
