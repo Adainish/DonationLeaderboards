@@ -8,7 +8,7 @@ public class Donator {
 
 
     public Donator(UUID uuid) {
-
+        setUuid(uuid);
     }
 
     public void updateCache() {
@@ -21,5 +21,17 @@ public class Donator {
 
     public void setUuid(UUID uuid) {
         this.uuid = uuid;
+    }
+
+    public void increaseAmount(float amount) {
+        this.amount += amount;
+    }
+
+    public float getAmount() {
+        return amount;
+    }
+
+    public void setAmount(float amount) {
+        this.amount = amount;
     }
 }

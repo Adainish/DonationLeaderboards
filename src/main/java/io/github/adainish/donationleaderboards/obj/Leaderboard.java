@@ -3,8 +3,6 @@ package io.github.adainish.donationleaderboards.obj;
 import info.pixelmon.repack.ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import io.github.adainish.donationleaderboards.DonationLeaderboards;
 import io.github.adainish.donationleaderboards.config.DonatorSpotConfig;
-import io.github.adainish.donationleaderboards.storage.DonatorSpotStorage;
-import io.github.adainish.donationleaderboards.storage.DonatorStorage;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -17,39 +15,42 @@ public class Leaderboard {
     private float currentAmount;
     private long lastReset;
     private List<DonatorSpot> donatorSpots = new ArrayList <>();
-    private List<Donator> donators = new ArrayList <>();
+
+    public List<Hologram> hologramList = new ArrayList <>();
+
+    public Leaderboard() {}
 
 
-    public Leaderboard() {
-        getDonatorSpots().addAll(DonatorSpotStorage.donatorSpotList());
-        getDonatorSpots().sort(Comparator.comparing(DonatorSpot::getRankingNumber));
+    public void loadFromConfig() {
+        CommentedConfigurationNode rootNode = DonatorSpotConfig.getConfig().get().getNode("DonatorSpot");
+        Map nodeMap = rootNode.getChildrenMap();
+
+        for (Object nodeObject : nodeMap.keySet()) {
+            if (nodeObject != null) {
+                String node = nodeObject.toString();
+                if (node != null) {
+                    donatorSpots.add(new DonatorSpot(node));
+                } else DonationLeaderboards.log.info("%node% returned null, check your config!");
+            } else DonationLeaderboards.log.info("%node% returned null, check your config!");
+        }
     }
-
 
 
     public void initDonatorSpots() {
-        if (donatorSpots.isEmpty()) {
-            CommentedConfigurationNode rootNode = DonatorSpotConfig.getConfig().get().getNode("DonatorSpot");
-            Map nodeMap = rootNode.getChildrenMap();
-
-            for (Object nodeObject : nodeMap.keySet()) {
-                if (nodeObject != null) {
-                    String node = nodeObject.toString();
-                    if (node != null) {
-                        donatorSpots.add(new DonatorSpot(node));
-                    } else DonationLeaderboards.log.info("%node% returned null, check your config!");
-                } else DonationLeaderboards.log.info("%node% returned null, check your config!");
+        try {
+            if (!donatorSpots.isEmpty()) {
+                getDonatorSpots().sort(Comparator.comparing(DonatorSpot::getRankingNumber));
+                donatorSpots.forEach(DonatorSpot::updateNPC);
+            } else {
+                loadFromConfig();
             }
-        }
-        else for (DonatorSpot sp:donatorSpots) {
-            sp.killNPC();
-            sp.spawnNPC();
+
+            DonationLeaderboards.wrapper.saveLeaderBoard();
+        } catch (NullPointerException e) {
+            e.printStackTrace();
         }
     }
 
-    public void initDonators() {
-        getDonators().addAll(DonatorStorage.donatorList());
-    }
 
 
     public float getRequiredAmount() {
@@ -84,11 +85,4 @@ public class Leaderboard {
         this.donatorSpots = donatorSpots;
     }
 
-    public List <Donator> getDonators() {
-        return donators;
-    }
-
-    public void setDonators(List <Donator> donators) {
-        this.donators = donators;
-    }
 }

@@ -19,6 +19,13 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(8)
 }
 
+//Enable UTF-8 Support
+tasks.withType(JavaCompile)
+        {
+            task ->
+                task.options.encoding = 'UTF-8'
+                task.options.fork = true
+        }
 minecraft {
     // The mappings can be changed at any time and must be in the following format.
     // Channel:   Version:

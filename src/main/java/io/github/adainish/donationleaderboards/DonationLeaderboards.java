@@ -4,10 +4,12 @@ import io.github.adainish.donationleaderboards.command.Command;
 import io.github.adainish.donationleaderboards.config.DonatorSpotConfig;
 import io.github.adainish.donationleaderboards.listeners.PlayerListener;
 import io.github.adainish.donationleaderboards.obj.Donator;
+import io.github.adainish.donationleaderboards.util.HologramWrapper;
 import io.github.adainish.donationleaderboards.wrapper.LeaderBoardWrapper;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import org.apache.logging.log4j.LogManager;
@@ -33,6 +35,7 @@ public class DonationLeaderboards {
     public static Logger log = LogManager.getLogger(MOD_NAME);
 
     public static LeaderBoardWrapper wrapper;
+    public static HologramWrapper hologramWrapper;
 
     private static HashMap <UUID, Donator> cachedDonators = new HashMap <>();
 
@@ -40,9 +43,18 @@ public class DonationLeaderboards {
     private static File dataDir;
 
     private static File leaderboardDir;
+    private static File playerDataDir;
 
     @Mod.Instance(MOD_ID)
     public static DonationLeaderboards INSTANCE;
+
+    public static File getPlayerDataDir() {
+        return playerDataDir;
+    }
+
+    public static void setPlayerDataDir(File playerDataDir) {
+        DonationLeaderboards.playerDataDir = playerDataDir;
+    }
 
 
     @Mod.EventHandler
@@ -61,7 +73,8 @@ public class DonationLeaderboards {
 
         setLeaderboardDir(new File(getDataDir() + "/leaderboard"));
         getLeaderboardDir().mkdirs();
-
+        setPlayerDataDir(new File(getDataDir() + "/playerdata"));
+        getPlayerDataDir().mkdirs();
         initConfigs();
 
         MinecraftForge.EVENT_BUS.register(new PlayerListener());
@@ -70,8 +83,19 @@ public class DonationLeaderboards {
 
     @Mod.EventHandler
     public void onServerStarting(FMLServerStartingEvent event) {
-        wrapper = new LeaderBoardWrapper();
         event.registerServerCommand(new Command());
+    }
+
+    @Mod.EventHandler
+    public void onServerStarted(FMLServerStartedEvent event) {
+        wrapper = new LeaderBoardWrapper();
+        hologramWrapper = new HologramWrapper();
+        wrapper.getLeaderboard().initDonatorSpots();
+    }
+
+    @Mod.EventHandler
+    public void onServerStopEvent(FMLServerStoppingEvent event) {
+        wrapper.saveAll();
     }
 
     @Mod.EventHandler
@@ -114,7 +138,7 @@ public class DonationLeaderboards {
 
     public void load() {
         initConfigs();
-        wrapper.getLeaderboard().initDonatorSpots();
+        wrapper.updateDonatorSpotData();
     }
 
     public void initConfigs() {

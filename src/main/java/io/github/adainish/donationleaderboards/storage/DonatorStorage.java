@@ -14,7 +14,7 @@ import java.util.UUID;
 
 public class DonatorStorage {
     public static void makeDonatorData(EntityPlayerMP player) {
-        File dir = DonationLeaderboards.getDataDir();
+        File dir = DonationLeaderboards.getPlayerDataDir();
         dir.mkdirs();
 
 
@@ -39,9 +39,35 @@ public class DonatorStorage {
         }
     }
 
+    public static void makeDonatorData(UUID uuid) {
+        File dir = DonationLeaderboards.getPlayerDataDir();
+        dir.mkdirs();
+
+
+        Donator donator = new Donator(uuid);
+
+        File file = new File(dir, "%uuid%.json".replaceAll("%uuid%", String.valueOf(uuid)));
+        if (file.exists()) {
+            DonationLeaderboards.log.error("There was an issue generating the Donator Data, Donator already exists? Ending function");
+            return;
+        }
+
+        Gson gson = Adapters.PRETTY_MAIN_GSON;
+        String json = gson.toJson(donator);
+
+        try {
+            file.createNewFile();
+            FileWriter writer = new FileWriter(file);
+            writer.write(json);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void saveDonatorData(Donator donator) {
 
-        File dir = DonationLeaderboards.getDataDir();
+        File dir = DonationLeaderboards.getPlayerDataDir();
         dir.mkdirs();
 
         File file = new File(dir, "%uuid%.json".replaceAll("%uuid%", String.valueOf(donator.getUuid())));
@@ -71,7 +97,7 @@ public class DonatorStorage {
 
     public static List <Donator> donatorList () {
         List<Donator> list = new ArrayList <>();
-        File dir = DonationLeaderboards.getDataDir();
+        File dir = DonationLeaderboards.getPlayerDataDir();
         dir.mkdirs();
 
         Gson gson = Adapters.PRETTY_MAIN_GSON;
@@ -93,7 +119,7 @@ public class DonatorStorage {
     }
 
     public static Donator getDonator(UUID uuid) {
-        File dir = DonationLeaderboards.getDataDir();
+        File dir = DonationLeaderboards.getPlayerDataDir();
         dir.mkdirs();
 
         if (DonationLeaderboards.getCachedDonators().containsKey(uuid))
