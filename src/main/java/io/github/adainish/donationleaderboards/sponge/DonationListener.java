@@ -6,14 +6,19 @@ import io.github.adainish.donationleaderboards.storage.DonatorStorage;
 import net.craftingstore.sponge.events.DonationReceivedEvent;
 import org.spongepowered.api.event.Listener;
 
-public class DonationListener {
+import java.util.UUID;
 
+public class DonationListener {
 
     @Listener
     public void onDonationReceived(DonationReceivedEvent event) {
         Donator donator = DonationLeaderboards.wrapper.getDonator(event.getDonation().getPlayer().getUUID());
         donator.increaseAmount(event.getDonation().getPackage().getPriceInCents());
-        DonationLeaderboards.wrapper.donators.replace(event.getDonation().getPlayer().getUUID(), donator);
+        UUID uuid = event.getDonation().getPlayer().getUUID();
+        if (DonationLeaderboards.wrapper.donators.containsKey(uuid)) {
+            DonationLeaderboards.wrapper.donators.replace(uuid, donator);
+        } else DonationLeaderboards.wrapper.donators.put(uuid, donator);
+
         DonatorStorage.saveDonatorData(donator);
         DonationLeaderboards.wrapper.updateDonatorSpotData();
     }

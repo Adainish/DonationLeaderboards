@@ -1,5 +1,6 @@
 package io.github.adainish.donationleaderboards.obj;
 
+import com.pixelmonmod.pixelmon.entities.npcs.EntityNPC;
 import com.pixelmonmod.pixelmon.entities.npcs.NPCChatting;
 import com.pixelmonmod.pixelmon.entities.npcs.registry.GeneralNPCData;
 import com.pixelmonmod.pixelmon.entities.npcs.registry.ServerNPCRegistry;
@@ -114,15 +115,25 @@ public class DonatorSpot {
         this.hologramDisplay = hologramDisplay;
     }
 
-    public void killDonatorNPCs() {
-        World world = Util.getInstance().getWorld(worldID);
+    public void updateHologram(World world) {
+        Hologram hologram;
+        hologram = DonationLeaderboards.hologramWrapper.getHologram(String.valueOf(hologramID));
 
-        for (Entity en:world.getLoadedEntityList()) {
-            if (en instanceof NPCChatting) {
-                if (en.getEntityData().hasKey("donatorNPC"))
-                    en.setDead();
+        try {
+            if (hologram != null) {
+                DonationLeaderboards.hologramWrapper.updateHologram(world, hologram.getEntityID(), getHologramDisplay());
+            } else {
+                throw new Exception("Hologram did not exist or could not be found, can't update it");
             }
+        } catch (Exception e) {
+            DonationLeaderboards.log.error(e.getMessage());
         }
+
+    }
+
+    public void setNPCSteve(NPCChatting npc, String username) {
+        npc.setTextureIndex(5);
+        npc.setCustomSteveTexture(username.replaceAll("\"", ""));
     }
 
     public void updateNPC() {
@@ -133,39 +144,26 @@ public class DonatorSpot {
             if (entity == null) {
                 throw new Exception("Entity did not exist or could not be found, can't update it");
             }
+
             NPCChatting npc = null;
-            if (entity instanceof NPCChatting) {
+            if (entity instanceof EntityNPC) {
                 npc = (NPCChatting) entity;
             } else {
-                return;
+                throw new Exception("Entity was not instance of NPCChatting, was it moved? Did not update. Worst case reset the leaderboard npc storage");
             }
+            npc.setName("Donator Rank: " + getRankingNumber());
+            npc.setChat(new ArrayList <>());
             if (uuid != null) {
                 try {
                     String username = ProfileFetcher.getName(uuid);
-                    DonationLeaderboards.log.debug(username);
-                    npc.setCustomSteveTexture(username);
-                    npc.setChat(new ArrayList <>());
-                    DonationLeaderboards.log.info("Setting Profile Name");
+                    setNPCSteve(npc, username);
                 } catch (IOException e) {
-                    npc.setChat(new ArrayList <>());
-                    npc.setName("Donator Rank: " + getRankingNumber());
                     DonationLeaderboards.log.info("Failed to connect with mojang, did not update NPC");
-                }
-                catch (NullPointerException e) {
-                    npc.setChat(new ArrayList <>());
-                    npc.setName("Donator Rank: " + getRankingNumber());
+                } catch (NullPointerException e) {
                     DonationLeaderboards.log.info("Failed to verify Donator Spot Account with mojang, did not update NPC");
                 }
             }
-            Hologram hologram;
-            hologram = DonationLeaderboards.hologramWrapper.getHologram(String.valueOf(hologramID));
-
-            if (hologram != null) {
-                DonationLeaderboards.hologramWrapper.updateHologram(world, hologram.getEntityID(), getHologramDisplay());
-            } else {
-                throw new Exception("Hologram did not exist or could not be found, can't update it");
-            }
-
+            updateHologram(world);
         } catch (Exception e) {
             DonationLeaderboards.log.error(e.getMessage());
         }
@@ -198,8 +196,54 @@ public class DonatorSpot {
         npc.initDefaultAI();
         npc.setPositionAndUpdate(getX(), getY(), getZ());
         npc.getEntityData().setBoolean("donatorNPC", true);
+        npc.enablePersistence();
         world.spawnEntity(npc);
         return npc;
+    }
+
+    public void spawnNPC(NPCChatting npc) {
+        World world = Util.getInstance().getWorld(worldID);
+
+
+        if (world.getWorldInfo().getWorldName().isEmpty()) {
+            DonationLeaderboards.log.info("Something went wrong loading the NPC world, did not spawn the NPC");
+            return;
+        }
+        BlockPos pos1 = new BlockPos(getX(), getY() + 0.5, getZ());
+        BlockPos pos2 = new BlockPos(getX() + 30, getY() + 100, getZ() + 30);
+        if (!world.isAreaLoaded(pos1, pos2)) {
+            DonationLeaderboards.log.info("Area wasn't loaded, delaying npc reloading");
+            return;
+        }
+
+
+        Hologram hologram = DonationLeaderboards.hologramWrapper.createHologram(world, pos1, hologramDisplay);
+        setHologramID(hologram.getEntityID());
+        DonationLeaderboards.wrapper.getLeaderboard().hologramList.add(hologram);
+        GeneralNPCData data = ServerNPCRegistry.villagers.getRandom();
+        setNpcID(npc.getEntityId());
+        if (uuid == null) {
+            npc.init(data);
+            npc.setCustomSteveTexture(data.getRandomTexture());
+            npc.setChat(new ArrayList <>());
+            npc.setName("Donator Rank: " + getRankingNumber());
+        }
+        else {
+            npc.setChat(new ArrayList <>());
+            npc.setName("Donator Rank: " + getRankingNumber());
+            try {
+                String username = ProfileFetcher.getName(uuid);
+                setNPCSteve(npc, username);
+            } catch (IOException e) {
+                npc.init(data);
+                npc.setCustomSteveTexture(data.getRandomTexture());
+                DonationLeaderboards.log.info("Failed to connect with mojang, set random NPC as skin");
+            } catch (NullPointerException e) {
+                npc.init(data);
+                npc.setName("Donator Rank: " + getRankingNumber());
+                DonationLeaderboards.log.info("Failed to verify Donator Spot Account with mojang, set random NPC as skin");
+            }
+        }
     }
 
     public void spawnNPC() {
@@ -210,13 +254,12 @@ public class DonatorSpot {
             DonationLeaderboards.log.info("Something went wrong loading the NPC world, did not spawn the NPC");
             return;
         }
-        BlockPos pos1 = new BlockPos(getX(), getY() + 1, getZ());
+        BlockPos pos1 = new BlockPos(getX(), getY() + 0.5, getZ());
         BlockPos pos2 = new BlockPos(getX() + 30, getY() + 100, getZ() + 30);
         if (!world.isAreaLoaded(pos1, pos2)) {
             DonationLeaderboards.log.info("Area wasn't loaded, delaying npc reloading");
             return;
         }
-
 
         Hologram hologram = DonationLeaderboards.hologramWrapper.createHologram(world, pos1, hologramDisplay);
         setHologramID(hologram.getEntityID());
@@ -233,13 +276,10 @@ public class DonatorSpot {
         else {
             try {
                 String username = ProfileFetcher.getName(uuid);
-                DonationLeaderboards.log.debug(username);
-                npc.setCustomSteveTexture(username);
+                setNPCSteve(npc, username);
                 npc.setChat(new ArrayList <>());
-                DonationLeaderboards.log.info("Setting Profile Name");
             } catch (IOException e) {
                 npc.init(data);
-                npc.setChat(new ArrayList <>());
                 npc.setCustomSteveTexture(data.getRandomTexture());
                 npc.setName("Donator Rank: " + getRankingNumber());
                 DonationLeaderboards.log.info("Failed to connect with mojang, set random NPC as skin");

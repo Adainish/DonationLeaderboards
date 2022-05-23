@@ -3,6 +3,9 @@ package io.github.adainish.donationleaderboards.obj;
 import info.pixelmon.repack.ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import io.github.adainish.donationleaderboards.DonationLeaderboards;
 import io.github.adainish.donationleaderboards.config.DonatorSpotConfig;
+import io.github.adainish.donationleaderboards.util.Util;
+import net.minecraft.entity.Entity;
+import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,14 +43,26 @@ public class Leaderboard {
         try {
             if (!donatorSpots.isEmpty()) {
                 getDonatorSpots().sort(Comparator.comparing(DonatorSpot::getRankingNumber));
-                donatorSpots.forEach(DonatorSpot::updateNPC);
+                donatorSpots.forEach(ds -> {
+                    World world = Util.getInstance().getWorld(ds.getWorldID());
+                    Entity entity = world.getEntityByID(ds.getNpcID());
+                    try {
+                        if (entity == null) {
+                            ds.spawnNPC();
+                            throw new Exception("Entity did not exist or could not be found, Spawning new NPC");
+                        } else ds.updateNPC();
+                    } catch (Exception e) {
+                        DonationLeaderboards.log.info(e.getMessage());
+                    }
+                });
             } else {
                 loadFromConfig();
             }
 
             DonationLeaderboards.wrapper.saveLeaderBoard();
-        } catch (NullPointerException e) {
-            e.printStackTrace();
+        }
+        catch (NullPointerException e) {
+            DonationLeaderboards.log.error(e.getMessage());
         }
     }
 

@@ -87,7 +87,9 @@ public class Command extends CommandBase {
 
                     Donator donator = DonationLeaderboards.wrapper.getDonator(uuid);
                     donator.increaseAmount(amount);
-                    DonationLeaderboards.wrapper.donators.replace(uuid, donator);
+                    if (DonationLeaderboards.wrapper.donators.containsKey(uuid)) {
+                        DonationLeaderboards.wrapper.donators.replace(uuid, donator);
+                    } else DonationLeaderboards.wrapper.donators.put(uuid, donator);
                     DonatorStorage.saveDonatorData(donator);
                     DonationLeaderboards.INSTANCE.load();
                     Util.send(sender, "&cUpdated donator with specified amount");

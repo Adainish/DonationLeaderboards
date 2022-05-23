@@ -1,10 +1,15 @@
 package io.github.adainish.donationleaderboards.wrapper;
 
+import com.pixelmonmod.pixelmon.entities.npcs.NPCChatting;
+import io.github.adainish.donationleaderboards.DonationLeaderboards;
 import io.github.adainish.donationleaderboards.obj.Donator;
 import io.github.adainish.donationleaderboards.obj.DonatorSpot;
 import io.github.adainish.donationleaderboards.obj.Leaderboard;
 import io.github.adainish.donationleaderboards.storage.DonatorStorage;
 import io.github.adainish.donationleaderboards.storage.LeaderboardStorage;
+import io.github.adainish.donationleaderboards.util.Util;
+import net.minecraft.entity.Entity;
+import net.minecraft.world.World;
 
 import java.util.*;
 
@@ -71,17 +76,30 @@ public class LeaderBoardWrapper {
                 break;
             highestDonorList.add(cachedDonorList.get(i));
         }
-        highestDonorList.sort(Comparator.comparing(Donator::getAmount));
-
-
+        highestDonorList.sort(Comparator.comparing(Donator::getAmount).reversed());
         for (int i = 0; i < highestDonorList.size(); i++) {
             Donator d = highestDonorList.get(i);
             for (int j = 0; j < getLeaderboard().getDonatorSpots().size(); j++) {
                 DonatorSpot spot = getLeaderboard().getDonatorSpots().get(i);
                 spot.setUuid(d.getUuid());
-                spot.updateNPC();
+                if (spot.getNpcID() <= 0) {
+                    NPCChatting npc = spot.createNPCChatting(Util.getInstance().getWorld(spot.getWorldID()));
+                    spot.spawnNPC(npc);
+                } else {
+                    World world = Util.getInstance().getWorld(spot.getWorldID());
+                    Entity entity = world.getEntityByID(spot.getNpcID());
+                    try {
+                        if (entity == null) {
+                            spot.spawnNPC();
+                            throw new Exception("Entity did not exist or could not be found, Spawning new NPC");
+                        } else spot.updateNPC();
+                    } catch (Exception e) {
+                        DonationLeaderboards.log.info(e.getMessage());
+                    }
+                };
             }
         }
+        saveLeaderBoard();
     }
 
     public void saveAll() {
